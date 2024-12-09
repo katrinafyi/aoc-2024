@@ -9,6 +9,7 @@ from collections import defaultdict
 def rreplace(x, old, new):
     return new.join(x.rsplit(old, 1))
 
+import heapq
 
 d = open(sys.argv[1] if len(sys.argv) >= 2 else 'input.txt').read()
 lines = [list(x) for x in d.split('\n') if x]
@@ -39,7 +40,7 @@ spaces = lmap(int, lines[0][1::2])
 # print(files)
 # print(spaces)
 
-w = sum(int(x) for x in lines[0])
+w = sum(files) + sum(spaces)
 print(w)
 
 # flat memory array
@@ -65,8 +66,7 @@ r = len(disk)-1
 while l < r:
   while disk[l] is not None:
     l += 1
-
-  while disk[r] is None:
+  while l < r and disk[r] is None:
     r -= 1
 
   disk[l] = disk[r]
@@ -74,10 +74,6 @@ while l < r:
 
 while disk[-1] is None:
   disk.pop()
-
-disk[-2] = disk[-1]
-disk[-1] = None
-disk.pop()
 
 res = 0
 for i, c in enumerate(disk):
@@ -92,10 +88,9 @@ for pos,fileid,w in reversed(fileposes):
     finalpos.append((pos, fileid, w))
     continue
 
-  gaps[gapw].remove(gappos)
+  heapq.heappop(gaps[gapw])
   if gapw-w > 0:
-    gaps[gapw-w].append(gappos+w)
-    gaps[gapw-w].sort()
+    heapq.heappush(gaps[gapw-w], gappos+w)
 
   finalpos.append((gappos, fileid, w))
 
