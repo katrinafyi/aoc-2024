@@ -83,7 +83,7 @@ print(res)
 
 finalpos = []
 for pos,fileid,w in reversed(fileposes):
-  gappos, gapw = min(((g[0], gw) for gw, g in enumerate(gaps) if g and gw >= w), default=(w, 0))
+  gappos, gapw = min(((g[0], gw) for gw, g in enumerate(gaps) if g and gw >= w), default=(pos, 0))
   if gappos >= pos:
     finalpos.append((pos, fileid, w))
     continue
