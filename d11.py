@@ -4,7 +4,7 @@
 import sys
 
 lmap = lambda f, xs: list(map(f, xs))
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 def rreplace(x, old, new):
     return new.join(x.rsplit(old, 1))
@@ -37,18 +37,17 @@ lines = [(x) for x in d.split('\n') if x]
 
 # print(m)
 
-d = defaultdict(int)
-for n in ints(lines[0]):
-  d[n] += 1
+d = Counter(ints(lines[0]))
 
 for i in range(75):
-  new = defaultdict(int)
+  new = Counter()
   for n, count in d.items():
+    lens = len(str(n))
     if n == 0:
       new[1] += count
-    elif len(str(n)) % 2 == 0:
-      new[int(str(n)[:len(str(n))//2])] += count
-      new[int(str(n)[len(str(n))//2:])] += count
+    elif lens % 2 == 0:
+      new[int(str(n)[:lens//2])] += count
+      new[int(str(n)[lens//2:])] += count
     else:
       new[n*2024] += count
 
