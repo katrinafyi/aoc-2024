@@ -52,5 +52,7 @@ for i in range(75):
       new[n*2024] += count
 
     d = new
+  if i+1 == 25:
+    print(sum(d.values()))
 print(sum(d.values()))
 
