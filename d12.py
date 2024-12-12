@@ -76,36 +76,27 @@ for u in uniq:
         if p2 not in chunk:
           adjacencies.append((p,p2))
     verts = [(p,p2) for p,p2 in adjacencies if p[0] == p2[0]]
-    verts = [x[::-1] for x in verts]
-    verts.sort(reverse=True)
+    verts = [(x[::-1], y[::-1]) for x,y in verts]
+    verts.sort()
     horiz = [(p,p2) for p,p2 in adjacencies if p[1] == p2[1]]
-    horiz.sort(reverse=True)
+    horiz.sort()
     assert len(horiz) + len(verts) == len(adjacencies)
 
     # horizontals: sides which are horizontal (i.e. adjacencies have the same column)
     # sorted by column
-    seen = set()
+
     sides = 0
-    for p,p2 in horiz:
-      left = (0,1)
-      assert addd(p,left) != p2
-      assert subb(p,left) != p2
-      assert addd(p2,left) != p
-      assert subb(p2,left) != p
-      if (p,p2) not in seen and (addd(p,left),addd(p2,left)) not in seen:
-        sides += 1
-      seen.add((p,p2))
-    for p,p2 in verts:
-      left = (1,0)
-      assert addd(p,left) != p2
-      assert subb(p,left) != p2
-      assert addd(p2,left) != p
-      assert subb(p2,left) != p
-      if (p,p2) not in seen and (addd(p,left),addd(p2,left)) not in seen:
-        sides += 1
-      seen.add((p,p2))
-
-
+    for theside in [horiz, verts]:
+      seen = set()
+      for p,p2 in theside:
+        left = (0,-1)
+        assert addd(p,left) != p2
+        assert subb(p,left) != p2
+        assert addd(p2,left) != p
+        assert subb(p2,left) != p
+        if (p,p2) not in seen and (addd(p,left),addd(p2,left)) not in seen:
+          sides += 1
+        seen.add((p,p2))
 
     #
     # edge = next(iter(p for p in chunk if any((addd(p,d)) not in chunk for d in dirs)))
