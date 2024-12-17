@@ -213,23 +213,19 @@ for c in coeffs:
   num += (8-c) if c is not None else 0
 print(num)
 
-
-possible = []
-for i in range(2**10):  # 10-bit maximum influencer length
-  if go(i)[-1] == prog[-1]:
-    possible.append(i)
-
-def pick(p: int, fixed: int):
-  if fixed == len(prog):
-    yield p
+def pick(remaining):
+  if remaining == 0:
+    yield 0
     return
-  p <<= 3  # 3-bit steps, placed at lowest bits
-  for i in range(2**3):
-    if go(p + i)[-1-fixed] == prog[-1-fixed]:
-      yield from pick(p + i, fixed + 1)
 
-from itertools import chain
-print('possible', next(chain.from_iterable(pick(p, 1) for p in possible)))
+  for p in pick(remaining-1):
+    p *= 8
+    print(remaining, p)
+    for p in range(p, p+8):
+      if go(p) == prog[-remaining:]:
+        yield p
+
+print('possible', next(pick(len(prog))))
 
 assert go(cumsum) == prog
 
