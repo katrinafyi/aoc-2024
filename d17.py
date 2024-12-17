@@ -3,7 +3,7 @@
 
 # /// script
 # dependencies = [
-#   "scipy",
+#   "sympy",
 # ]
 # ///
 import sys
@@ -31,23 +31,66 @@ prog = ints(p)
 print(regs)
 print(prog)
 
+
 regs0 = regs.copy()
 def go(a: int):
-  regs = regs0.copy()
+  # regs = regs0.copy()
   regs[0] = a
 
   def combo(x):
     def set(val):
       regs[x-4] = val
     if 0 <= x <= 3:
-      return x, None
+      return x, x
     if 4 <= x <= 6:
-      return regs[x-4], None
+      return regs[x-4], f'regs[{x-4}]'
     assert False, 'wrong operand'
 
   output = []
   ip = 0
   wrong = False
+  #
+  #
+  # print('int main(int argc, char** argv) {')
+  # print('uint64_t regs[3] = {0};')
+  # print('scanf("%llu",&regs[0]);')
+  # i = 0
+  # while i < len(prog):
+  #   opcode = prog[i]
+  #   opn = prog[i+1]
+  #   print(f'label_{i}:')
+  #   if opcode == 0:
+  #     print('regs[0] = regs[0] >>', combo(opn)[1], ';')
+  #     # num = regs[0]
+  #     # den = 2**combo(opn)[0]
+  #     # regs[0] = num // den
+  #   elif opcode == 1:
+  #     print('regs[1] = regs[1] ^', opn, ';')
+  #     # regs[1] = regs[1] ^ opn
+  #   elif opcode == 2:
+  #     print(f'regs[1] = {combo(opn)[1]} % 8;')
+  #   elif opcode == 3:
+  #     print(f'if (regs[0] == 0) {{}} else {{ goto label_{opn}; }};')
+  #     # if not regs[0]:
+  #     #   pass
+  #     # else:
+  #     #   ip = opn
+  #     #   jumped = True
+  #   elif opcode == 4:
+  #     # regs[1] = regs[1] ^ regs[2]
+  #     print('regs[1] = regs[1] ^ regs[2];')
+  #   elif opcode == 5:
+  #     print(f'putc(({combo(opn)[1]} % 8) + \'0\');')
+  #     # print(combo(opn)[0] % 8, end=',', flush=True)
+  #   elif opcode == 6:
+  #     print('regs[1] = regs[0] >>', combo(opn)[1], ';')
+  #   elif opcode == 7:
+  #     print('regs[2] = regs[0] >>', combo(opn)[1], ';')
+  #
+  #   i += 2
+  # print('}')
+  # raise 0
+
   while ip < len(prog):
     # if len(output) > len(prog): 
     #   wrong = True
@@ -170,13 +213,34 @@ for c in coeffs:
   num += (8-c) if c is not None else 0
 print(num)
 
+
+possible = []
+for i in range(2**10):  # 10-bit maximum influencer length
+  if go(i)[-1] == prog[-1]:
+    possible.append(i)
+
+def pick(p: int, fixed: int):
+  if fixed == len(prog):
+    yield p
+    return
+  p <<= 3  # 3-bit steps, placed at lowest bits
+  for i in range(2**3):
+    if go(p + i)[-1-fixed] == prog[-1-fixed]:
+      yield from pick(p + i, fixed + 1)
+
+from itertools import chain
+print('possible', next(chain.from_iterable(pick(p, 1) for p in possible)))
+
 assert go(cumsum) == prog
 
 a = 38886633881076
+
 while go(a) != prog:
   a += 1
 
 print(a)
 
+
+# https://dogbolt.org/?id=2be8897b-5916-43e8-bc17-3b44a457511f#BinaryNinja=97&angr=97&Ghidra=103&Hex-Rays=130
 
 # assert go(cumsum) == prog
