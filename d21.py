@@ -109,6 +109,7 @@ def go(pad, old: str, new: str):
     return next(k for k,v in pad.items() if v == c)
   pos = find(old)
   cpos = find(new)
+  apos = find('A')
   # possible = []
   # for c in target:
   #   opos = pos
@@ -120,13 +121,27 @@ def go(pad, old: str, new: str):
     thismove = []
     while cpos != pos:
       dr, dc = subb(cpos, pos)
+
+      mov = '>' if dc > 0 else '<'
+      if dc != 0 and addd(movemap[mov], pos) in pad and cpos[0] != apos[0]:
+        thismove.append(mov)
+        pos = addd(movemap[mov], pos)
+        continue
+
       mov = 'v' if dr > 0 else '^'
-      if dr != 0 and random.random() > 0.5 and addd(movemap[mov], pos) in pad:
+      if dr != 0 and addd(movemap[mov], pos) in pad:
+        thismove.append(mov)
+        pos = addd(movemap[mov], pos)
+        continue
+
+
+      mov = 'v' if dr > 0 else '^'
+      if dr != 0 and addd(movemap[mov], pos) in pad:
         thismove.append(mov)
         pos = addd(movemap[mov], pos)
         continue
       mov = '>' if dc > 0 else '<'
-      if dc != 0 and random.random() > 0.5 and addd(movemap[mov], pos) in pad:
+      if dc != 0 and addd(movemap[mov], pos) in pad:
         thismove.append(mov)
         pos = addd(movemap[mov], pos)
         continue
@@ -156,45 +171,105 @@ def go2(pad, c: str, target):
   c2 = target[0]
   for poss in go(pad, c, c2):
     for rest in go2(pad, c2, target[1:]):
-        return [(poss + tuple(rest))]
-  return []
+        asd.append (poss + tuple(rest))
+  return asd
 
 # print(list(go2(numpad, 'A', '029A')))
-
-def godirpads(p1, n):
-  if n == 0:
-    yield p1
-    return
-  for p2 in go2(dirpad, 'A', p1):
-    yield from godirpads(p2, n-1)
 
 def go3(w):
   minl = 100000000000000000000000
   minp = 'a'
   for p1 in go2(numpad, 'A', w):
-    for p3 in godirpads(p1, 25):
-      if len(p3) < minl:
-        minl = len(p3)
-        minp = p3
+    for p2 in go2(dirpad, 'A', p1):
+      for p3 in go2(dirpad, 'A', p2):
+        if len(p3) < minl:
+          minl = len(p3)
+          minp = p1,p2,p3
+          # if w == '379A':
+          #   print(''.join(p3))
   return minl, int(w.replace('A', '')),minp
 
 def go4(w):
-  a,b,c = min(go3(w) for _ in range(100))
-  print(a,b,''.join(c))
+  a,b,c = min(go3(w) for _ in range(1))
+  print(a,b)
+  for asd in c:
+    print(''.join(asd))
   return a,b
 
-import sys
+# res = 0
+# for target in lines:
+#   a,b = go4(target)
+#   print(a, b,target)
+#   res += a*b
+# print(res)
+#
+'''
+so we want to do an inductive shortest path algorithm
+where edge weights are the length of the _final_ string which
+is needed to make that movement
+how do we induct???
 
-sys.setrecursionlimit(15000)
+num[0,2] = min_(p in paths) (sum(dpad[p1,p2] for p1,p2 in sliding(p)))
 
-res = 0
-for target in lines:
-  a,b = go4(target)
-  print(a, b,target)
-  res += a*b
-print(res)
+where paths includes clicking A 
 
+basest[x,y] = 1
 
+'''
 
+def shortestpath(pad, start, weights):
+  # weights maps the directional movement to the cost of that movement.
+  def find(c):
+    return next(k for k,v in pad.items() if v == c)
 
+  start = find(start)
 
+  seen = {}
+  q = []
+  q.append((0,start,None))
+
+  while q:
+    w, pos,pred = heapq.heappop(q)
+    if pos in seen:
+      if w == seen[pos][0]:
+        seen[pos][1].add(pred)
+      continue
+    seen[pos] = (w,{pred})
+    for d in dirs:
+      pos2 = addd(d, pos)
+      cost = weights[d]
+      assert cost >= 1
+      if pos2 in pad and pos2 not in seen:
+        heapq.heappush(q, (w+cost,pos2,d))
+
+  return seen
+
+def getpaths(preds, start, end):
+  q = deque()
+  q.append([end,()])
+  seen = set()
+  endpaths = []
+  while q:
+    print(q)
+    pos,path = q.popleft()
+    if pos == start:
+      endpaths.append(path)
+    for d in preds[pos][1]:
+      if d is None: continue
+      pos2 = subb(pos, d)
+      q.append((pos2, (pos2,) + path))
+  return endpaths
+
+from pprint import pprint
+
+asdf = (shortestpath(dict(numpad), 'A', defaultdict(lambda: 1)))
+pprint(asdf)
+pprint(getpaths(asdf, (3,2), (0,0)))
+
+dircosts = defaultdict(lambda: 1)
+for i in range(2):
+  result = (shortestpath(dict(dirpad), 'A', dircosts))
+
+"""
+dist[<,^] = min_(p in paths) (sum(prevdist[p1,p2] for p1,p2 in sliding(p)))
+"""
