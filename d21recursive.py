@@ -41,7 +41,7 @@ def find(pad, c):
 @cache
 def costofmakingarobotpressthisbutton(thebutton: str, mypos: tuple, deepstate: tuple[tuple,...]):
   if len(deepstate) == 0:
-    return [(1,find(dirpad, thebutton),())]  # at depth 0, all buttons are simply one action to press.
+    return [(1,(-1,-1),())]  # at depth 0, all buttons are simply one action to press.
   q = []
   q.append((0,mypos,deepstate,None))
   minw = None
@@ -62,7 +62,7 @@ def costofmakingarobotpressthisbutton(thebutton: str, mypos: tuple, deepstate: t
       pos2 = addd(d, pos)
       if pos2 not in dirpad: continue
       for cost,botpos,deepstate2 in costofmakingarobotpressthisbutton(charofdir[d], deepstate[0], deepstate[1:]):
-        heapq.heappush(q, (w+cost,pos2,(botpos,) + deepstate2,pos))
+        heapq.heappush(q, (w+cost,pos2,(botpos,) + deepstate2,(pos,deepstate)))
 
   assert minw is not None
   assert mindeepstate
@@ -82,16 +82,21 @@ def costofmakingarobotpressthisbutton(thebutton: str, mypos: tuple, deepstate: t
   # after having clicked thebutton, this robot is now on top of thebutton.
   return returns
 
+print(costofmakingarobotpressthisbutton('v', apos, (apos,)))
+
 
 def getcost(s,n):
   a = 0
   ds = (apos,)*n
-  pos = apos
+  poses = [(0,apos,ds)]
   for c in s:
-    cost,pos2,ds2 = min(costofmakingarobotpressthisbutton(c, pos, ds))
-    a += cost
-    pos,ds = pos2,ds2
-  return a
+    newposes = []
+    for a,pos,ds in poses:
+      asdf = (costofmakingarobotpressthisbutton(c, pos, ds))
+      for cost,pos2,ds2 in asdf:
+        newposes.append((a+cost,pos2,ds2))
+    poses = newposes
+  return min(poses)[0]
 
 s = '<A^A>^^AvvvA'
 print(len(s))
@@ -117,7 +122,6 @@ numpad = {
   (2,0): '1',
   (2,1): '2',
   (2,2): '3',
-
 
   # (3,0): '9',
   (3,1): '0',
