@@ -19,7 +19,7 @@ def rreplace(x, old, new):
 
 # print(ints)
 
-from itertools import combinations, permutations, zip_longest
+from itertools import combinations, pairwise, permutations, zip_longest
 from functools import cache, lru_cache, reduce
 transpose = lambda x: list(map(list, zip_longest(*x, fillvalue=' ')))
 
@@ -53,6 +53,7 @@ movemap = {
   '>': (0,1),
   'v': (1,0)
 }
+rmovemap = {v:k for k,v in movemap.items()}
 
 # poses = list(tuple(ints(x)) for x in d.split('\n') if x)
 # print(poses)
@@ -216,13 +217,14 @@ where paths includes clicking A
 basest[x,y] = 1
 
 '''
+def find(pad, c):
+  if not isinstance(pad, dict): pad = dict(pad)
+  return next(k for k,v in pad.items() if v == c)
 
 def shortestpath(pad, start, weights):
   # weights maps the directional movement to the cost of that movement.
-  def find(c):
-    return next(k for k,v in pad.items() if v == c)
 
-  start = find(start)
+  start = find(pad, start)
 
   seen = {}
   q = []
@@ -237,7 +239,8 @@ def shortestpath(pad, start, weights):
     seen[pos] = (w,{pred})
     for d in dirs:
       pos2 = addd(d, pos)
-      cost = weights[d]
+      if pos2 not in pad: continue
+      cost = weights[pos,pos2]
       assert cost >= 1
       if pos2 in pad and pos2 not in seen:
         heapq.heappush(q, (w+cost,pos2,d))
@@ -250,7 +253,7 @@ def getpaths(preds, start, end):
   seen = set()
   endpaths = []
   while q:
-    print(q)
+    # print(q)
     pos,path = q.popleft()
     if pos == start:
       endpaths.append(path)
@@ -262,13 +265,45 @@ def getpaths(preds, start, end):
 
 from pprint import pprint
 
-asdf = (shortestpath(dict(numpad), 'A', defaultdict(lambda: 1)))
-pprint(asdf)
-pprint(getpaths(asdf, (3,2), (0,0)))
+# XXX: here we are only considering dpad robots.
 
-dircosts = defaultdict(lambda: 1)
-for i in range(2):
-  result = (shortestpath(dict(dirpad), 'A', dircosts))
+# how much does it cost ME to /move/ YOU from src to tgt?
+transitioncosts = {(src,tgt):1 for src,_ in dirpad for tgt,_ in dirpad}
+# not included: cost of making you press A is always 1.
+
+for i in range(1):
+  # print(transitioncosts)
+  newcosts = {}
+  # srcpos, src = find(dirpad, 'A'), 'A'
+  for srcpos,src in (dirpad):
+    # obtain shortest path for the robot UNDER CONTROL
+    pathresult = (shortestpath(dict(dirpad), src, transitioncosts))
+
+    for tgtpos,tgt in (dirpad):
+      forwcost = pathresult[tgtpos][0]
+      # backcost = (shortestpath(dict(dirpad), tgt, transitioncosts))[srcpos][0]
+      # print('to make YOU go to', tgt, 'then back is', forwcost, backcost)
+      # if tgt != 'A':
+      newcosts[srcpos,tgtpos] = forwcost
+  transitioncosts = newcosts
+    # newcosts
+    # print(f'you are at [{src}] and i want you to press [{tgt}]')
+    # for p in getpaths(pathresult, srcpos, tgtpos):
+    #   for p1,p2 in pairwise(p + (tgtpos,)):
+    #     print(rmovemap[subb(p2,p1)], end='')
+    #   print('A')
+
+def getcost(command, dpadcosts):
+  x = 1
+  print(dpadcosts)
+  for c1,c2 in pairwise(command):
+    x += dpadcosts[find(dirpad,c1),find(dirpad,c2)]
+  return x
+
+s = '<A'
+print(getcost(s, transitioncosts))
+print(len('v<<A>>^A<A>AvA<^AA>A<vAAA>^A'))
+
 
 """
 dist[<,^] = min_(p in paths) (sum(prevdist[p1,p2] for p1,p2 in sliding(p)))
