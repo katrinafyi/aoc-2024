@@ -81,7 +81,7 @@ def go(initial, gates, realgates):
   for k,v in initial:
     vals[k] = v == '1'
   x,y = (getdigit('x'), getdigit('y'))
-  print(lmap(hex,[x,y,x+y]))
+  # print(lmap(hex,[x,y,x+y]))
 
   faketoreal = {}
   realtofake = {}
@@ -94,6 +94,7 @@ def go(initial, gates, realgates):
   q = set()
   for k in vals:
     q |= (allows[k])
+
   while q:
     # print(q)
     # print(faketoreal)
@@ -113,12 +114,22 @@ def go(initial, gates, realgates):
         a2 = faketoreal[a]
         b2 = faketoreal[b]
         op2 = op
-        print(a2,op2,b2, '-> fake', out, end='')
-        ra,rop,rb,rout = next((a,op,b,out) for a,op,b,out in realgates if {a,b} == {a2,b2} and op == op2)
-        print(' = real', rout, '?')
+        # print(a2,op2,b2, '-> fake', out, end='')
+        try:
+          ra,rop,rb,rout = next((a,op,b,out) for a,op,b,out in realgates if {a,b} == {a2,b2} and op == op2)
+        except StopIteration:
+          print('\nfailed to match. one of these assignments is wrong:', a2, b2)
+          # XXX: tacitly assumes that at most one input of a gate is swapped.
+          possiblera = [(a if b2 != a else b,a2) for a,op,b,out in realgates if b2 in {a,b} and op == op2]
+          possiblerb = [(a if a2 != a else b,b2) for a,op,b,out in realgates if a2 in {a,b} and op == op2]
+          possibleswaps = set(map(frozenset,possiblera + possiblerb))
+          # frozenset + inline if/else deals with commutativity
+          print('possible recovering swaps', possibleswaps)
+          return False, -1, realtofake, possibleswaps
+        # print(' = real', rout, '?')
         if out in faketoreal:
           print('attempting to reassign fake', out, 'to real', rout, 'but was already real', faketoreal[out])
-          raise 0
+          assert False, 'surely not. invalid visit order??'
         # if rout in swaps:
         #   print('SWAPPING!!!', out, 'via', {rout, swaps[rout]})
         #   rout = swaps[rout]
@@ -133,13 +144,15 @@ def go(initial, gates, realgates):
   # print(faketoreal)
   assert set(allows) == set(vals)
 
-  return getdigit('z'), realtofake
+  return True, getdigit('z'), realtofake, set()
 
-# print(go(initial, gates, None))
+print('part1', go(initial, gates, gates)[:2])
 
 
 realgates = []
-count = 45
+maxvar = max(initial)[0]
+print('found largest variable', maxvar)
+count = int(maxvar[1:]) + 1
 for i in range(count):
   ii = f'{i:02}'
   y = f'y{ii}'
@@ -163,25 +176,32 @@ for i in range(count):
     else:
       realgates.append(('partial' + carry, 'OR', f'partialsumandcprev{ii}', f'carry{ii}'))
 
-swaps = {}
-# XXX: at this point, we run the matching algorithm `go`.
-# if it mismatches, we compare the printed output to https://www.build-electronic-circuits.com/full-adder/
-# and manually specify the re-wirings such that it matches the diagram again.
-# repeat until done.
-swaps['z11'] = 'partialcarry11'
-swaps['z24'] = 'carry24'
-swaps['partialcarry28'] = 'partialsum28'
-swaps['z38'] = 'partialsumandcprev38'
+# XXX: for the competition submission, we manually identified
+# swaps when running `go` and seeing a StopIteration.
 
-for k,v in list(swaps.items()):
-  assert v not in swaps
-  swaps[v] = k
+# swaps['z11'] = 'partialcarry11'
+# swaps['z24'] = 'carry24'
+# swaps['partialcarry28'] = 'partialsum28'
+# swaps['z38'] = 'partialsumandcprev38'
 
-realgates = [(a,op,b,swaps.get(out,out)) for a,op,b,out in realgates]
+realgates0 = realgates.copy()
 
-# print(realgates)
-x, realtofake = (go(initial, gates, realgates))
+swaps = None
+realtofake = None
+ok = False
+swapq = [{}]
+while not ok and swapq:
+  swaps = swapq.pop()
+  realgates = [(a,op,b,swaps.get(out,out)) for a,op,b,out in realgates0]
+  ok, _, realtofake, swapoptions = go(initial, gates, realgates)
+  for a,b in swapoptions:
+    swapq.append(swaps.copy() | {a:b, b:a})
 
+assert ok, 'something has gone wrong and we did not succeed the swapping'
+assert realtofake and swaps
+
+print()
+print('swaps:', *set(map(frozenset, swaps.items())), sep='\n')
 print(','.join(list(sorted(realtofake[r] for r in swaps))))
 
 
