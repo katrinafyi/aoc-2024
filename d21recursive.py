@@ -80,7 +80,8 @@ def costofmakingarobotpressthisbutton(thebutton: str, mypos: tuple, deepstate: t
   # print('preds', len(preds[thebuttonpos]))
 
   # after having clicked thebutton, this robot is now on top of thebutton.
-  return returns
+  minw = min(x[0] for x in returns)
+  return {x for x in returns if x[0] == minw}
 
 print(costofmakingarobotpressthisbutton('v', apos, (apos,)))
 
