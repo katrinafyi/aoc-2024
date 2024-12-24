@@ -240,7 +240,7 @@ def shortestpath(pad, start, weights):
     for d in dirs:
       pos2 = addd(d, pos)
       if pos2 not in pad: continue
-      cost = weights[pos,pos2]
+      cost = weights[d]
       assert cost >= 1
       if pos2 in pad and pos2 not in seen:
         heapq.heappush(q, (w+cost,pos2,d))
@@ -267,17 +267,18 @@ from pprint import pprint
 
 # XXX: here we are only considering dpad robots.
 
-# how much does it cost ME to /move/ YOU from src to tgt?
-transitioncosts = {(src,tgt):1 for src,_ in dirpad for tgt,_ in dirpad}
-# not included: cost of making you press A is always 1.
+# how much does it cost ME to perform a given action?
+dpadcosts = {d: 1 for d in dirs}
+# transitioncosts = {(src,tgt):1 for src,_ in dirpad for tgt,_ in dirpad}
+# XXX: not included: cost of making you press A is always 1.
 
-for i in range(1):
+for i in range(2):
   # print(transitioncosts)
   newcosts = {}
   # srcpos, src = find(dirpad, 'A'), 'A'
   for srcpos,src in (dirpad):
     # obtain shortest path for the robot UNDER CONTROL
-    pathresult = (shortestpath(dict(dirpad), src, transitioncosts))
+    pathresult = (shortestpath(dict(dirpad), src, dpadcosts))
 
     for tgtpos,tgt in (dirpad):
       forwcost = pathresult[tgtpos][0]
@@ -294,15 +295,16 @@ for i in range(1):
     #   print('A')
 
 def getcost(command, dpadcosts):
-  x = 1
+  x = 0
   print(dpadcosts)
   for c1,c2 in pairwise(command):
-    x += dpadcosts[find(dirpad,c1),find(dirpad,c2)]
+    x += dpadcosts[find(dirpad,c1),find(dirpad,c2)] + 1
   return x
 
-s = '<A'
+s = '<A^A>^^AvvvA'
 print(getcost(s, transitioncosts))
 print(len('v<<A>>^A<A>AvA<^AA>A<vAAA>^A'))
+print(len('<vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A'))
 
 
 """
